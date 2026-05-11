@@ -430,6 +430,12 @@ const StyledWrapper = styled.div`
     white-space: pre-wrap;
     word-break: break-word;
     flex: 1;
+
+    .log-link {
+      color: ${(props) => props.theme.primary.strong};
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
     
     .log-object {
       margin: 4px 0;

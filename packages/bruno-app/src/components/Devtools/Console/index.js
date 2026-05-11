@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ReactJson from 'react-json-view';
+import LinkifyIt from 'linkify-it';
 import { useTheme } from 'providers/Theme';
 import {
   IconX,
@@ -33,6 +34,8 @@ import RequestDetailsPanel from './RequestDetailsPanel';
 import ErrorDetailsPanel from './ErrorDetailsPanel';
 import Performance from '../Performance';
 import StyledWrapper from './StyledWrapper';
+
+const linkify = new LinkifyIt({ fuzzyLink: false, fuzzyEmail: false });
 
 const LogIcon = ({ type }) => {
   const iconProps = { size: 16, strokeWidth: 1.5 };
@@ -150,6 +153,50 @@ const getBrunoTypeMetadata = (obj) => {
 const LogMessage = ({ message, args }) => {
   const { displayedTheme } = useTheme();
 
+  const renderTextWithLinks = (value, keyPrefix) => {
+    const text = String(value);
+    const matches = linkify.match(text);
+    if (!matches) {
+      return text;
+    }
+
+    const parts = [];
+    let currentIndex = 0;
+
+    matches.forEach((match, index) => {
+      if (!/^https?:\/\//i.test(match.url)) {
+        return;
+      }
+
+      if (match.index > currentIndex) {
+        parts.push(text.slice(currentIndex, match.index));
+      }
+
+      parts.push(
+        <a
+          key={`${keyPrefix}-link-${index}`}
+          href={match.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="log-link"
+        >
+          {match.text}
+        </a>
+      );
+      currentIndex = match.lastIndex;
+    });
+
+    if (!parts.length) {
+      return text;
+    }
+
+    if (currentIndex < text.length) {
+      parts.push(text.slice(currentIndex));
+    }
+
+    return parts;
+  };
+
   const formatMessage = (msg, originalArgs) => {
     if (originalArgs && originalArgs.length > 0) {
       return originalArgs.map((arg, index) => {
@@ -187,10 +234,10 @@ const LogMessage = ({ message, args }) => {
             </div>
           );
         }
-        return String(arg);
+        return renderTextWithLinks(arg, `arg-${index}`);
       });
     }
-    return msg;
+    return renderTextWithLinks(msg, 'message');
   };
 
   const formattedMessage = formatMessage(message, args);
